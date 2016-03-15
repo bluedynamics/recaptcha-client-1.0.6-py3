@@ -1,11 +1,11 @@
 # Overview #
 
-**recaptcha-client-1.0.6-ssl** is a Python 2.x module that interfaces with reCAPTCHA and reCAPTCHA Mailhide. It generates HTML to let you display reCAPTCHA on your website, and to submit reCAPTCHA attempts to the reCAPTCHA server.
+**recaptcha-client-1.0.6-py3** is a Python 3.x module that interfaces with reCAPTCHA and reCAPTCHA Mailhide (not tested). It generates HTML to let you display reCAPTCHA on your website, and to submit reCAPTCHA attempts to the reCAPTCHA server.
 
 - **reCAPTCHA** is generally used inside HTML forms. Users must solve a reCAPTCHA to submit a form successfully.
 - **reCAPTCHA Mailhide** masks email addresses, and requires a user to solve a reCAPTCHA to reveal the full email address.
 
-This code is forked from the original Python [recaptcha-client 1.0.6](http://pypi.python.org/pypi/recaptcha-client "recaptcha-client 1.0.6"), and is fully backwards compatible with it (no code changes are necessary to implement). It has all of the features of **recaptcha-client 1.0.6**, plus the following new ones:
+This code is forked from the Python client [recaptcha-client 1.0.6-ssl](https://github.com/dave-gallagher/recaptcha-client-1.0.6-ss), and is fully backwards compatible with it (no code changes are necessary to implement). It has all of the features of **recaptcha-client 1.0.6**, plus the following new ones:
 
 - SSL support for submit() in captcha.py.
 - SSL support for asurl() and ashtml() in mailhide.py.

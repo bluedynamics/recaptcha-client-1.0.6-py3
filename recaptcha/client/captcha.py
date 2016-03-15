@@ -27,199 +27,198 @@
 	contacting the reCAPTCHA servers.
 """
 
-import urllib2, urllib
+import urllib.request
+import urllib.error
+import urllib.parse
 
-API_SSL_SERVER	= "https://www.google.com/recaptcha/api"
-API_SERVER		= "http://www.google.com/recaptcha/api"
+API_SSL_SERVER = "https://www.google.com/recaptcha/api"
+API_SERVER = "http://www.google.com/recaptcha/api"
 
 
 class RecaptchaResponse(object):
-	""" The response returned from the reCAPTCHA server, indicating 
-		if the submitted reCAPTCHA was correct or not.
-		
-		
-		_____Attributes_____
-		
-		is_valid   - True/False, incidating if reCAPTCHA was successful or not.
-		error_code - If |is_valid| is False, an error code string.
-		
-		
-		_____Discussion_____
-		
-		An instance of this object is returned by submit(). You can 
-		check its attributes to see if the reCAPTCHA was successful.
-		
-		Error codes are documented here, and may change in the future: 
-		http://code.google.com/apis/recaptcha/docs/verify.html
-		
-		If you pass your own custom |error| to displayhtml(), it will 
-		appear here instead of reCAPTCHA's error code.
-	"""
-	
-	def __init__(self, is_valid, error_code=None):
-		self.is_valid 	= is_valid
-		self.error_code = error_code
-	
+    """ The response returned from the reCAPTCHA server, indicating
+        if the submitted reCAPTCHA was correct or not.
+
+
+        _____Attributes_____
+
+        is_valid   - True/False, incidating if reCAPTCHA was successful or not.
+        error_code - If |is_valid| is False, an error code string.
+
+
+        _____Discussion_____
+
+        An instance of this object is returned by submit(). You can
+        check its attributes to see if the reCAPTCHA was successful.
+
+        Error codes are documented here, and may change in the future:
+        http://code.google.com/apis/recaptcha/docs/verify.html
+
+        If you pass your own custom |error| to displayhtml(), it will
+        appear here instead of reCAPTCHA's error code.
+    """
+
+    def __init__(self, is_valid, error_code=None):
+        self.is_valid = is_valid
+        self.error_code = error_code
 
 
 def displayhtml(public_key, use_ssl=False, error=None):
-	""" Generates and returns the HTML to display for reCAPTCHA.
-		
-		
-		_____Parameters_____
-		
-		public_key - Your Public reCAPTCHA API Key.
-		use_ssl    - If True, the reCAPTCHA request is sent over SSL.
-		error      - An error message to display (from RecaptchaResponse.error_code).
-		
-		
-		_____Return Value_____
-		
-		- reCAPTCHA HTML ready to be inserted inside a <form>.
-		
-		
-		_____Discussion_____
-		
-		Place this HTML somewhere inside your <form> code. After 
-		the user submits the form, capture 'recaptcha_challenge_field' 
-		and 'recaptcha_response_field' from the HTTP POST request.
-		Then, pass them to submit() along with other required 
-		arguments.
-		
-		You should also capture the IP address of the client who 
-		submitted the reCAPTCHA form; this must be passed to the 
-		submit() method next.
-	"""
-	
-	error_param = ''
-	if error:
-		error_param = '&error=%s' % error
-	
-	if use_ssl:
-		server = API_SSL_SERVER
-	else:
-		server = API_SERVER
-	
-	html_values = {
-		'ApiServer':  server, 
-		'PublicKey':  public_key, 
-		'ErrorParam': error_param, 
-	}
-	
-	html = 	"""<script type="text/javascript" src="%(ApiServer)s/challenge?k=%(PublicKey)s%(ErrorParam)s"></script>""" \
-			"""<noscript>""" \
-			"""  <iframe src="%(ApiServer)s/noscript?k=%(PublicKey)s%(ErrorParam)s" height="300" width="500" frameborder="0"></iframe><br />""" \
-			"""  <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>""" \
-			"""  <input type='hidden' name='recaptcha_response_field' value='manual_challenge' />""" \
-			"""</noscript>""" % html_values
-	
-	return html
+    """ Generates and returns the HTML to display for reCAPTCHA.
 
 
-def submit(recaptcha_challenge_field, recaptcha_response_field, private_key, remoteip, use_ssl=False, timeout_seconds=None):
-	""" Submits a reCAPTCHA request for verification. Returns a 
-		RecaptchaResponse object containing info if the request 
-		was successful or not.
-		
-		
-		_____Parameters_____
-		
-		recaptcha_challenge_field - The value of recaptcha_challenge_field from the form.
-		recaptcha_response_field  - The value of recaptcha_response_field from the form.
-		private_key               - Your Private reCAPTCHA API Key.
-		remoteip                  - IP address of the user submitting the reCAPTCHA.
-		use_ssl					  - True/False if SSL should be used or not.
-		timeout_seconds			  - Seconds to wait for urllib2 to connect to reCAPTCHA servers.
-		
-		
-		_____Return Value_____
-		
-		- RecaptchaResponse.is_valid == True if successful.
-		- RecaptchaResponse.is_valid == False if failure.
-			- RecaptchaResponse.error_code will also be set.
-		
-		
-		_____Discussion_____
-		
-		Returns RecaptchaResponse.is_valid == False if either 
-		'recaptcha_response_field' or 'recaptcha_challenge_field' 
-		are not provided, or are empty strings.
-		
-		Internally, if urllib2.URLError is raised due to a 
-		problem connecting to the reCAPTCHA server,  
-		RecaptchaResponse.is_valid == False will be returned and 
-		RecaptchaResponse.error_code will be set to a string 
-		"urllib2.URLError exception was raised: %s", where %s 
-		contains info about the exception. This can occur if 
-		the internet connection is down, the connection times 
-		out, the reCAPTCHA server refuses the connection, etc...
-		See the urllib2 docs for info.
-		
-		You should set |use_ssl| to True to protect your 
-		|private_key|. Otherwise it's sent in plain-text to 
-		the reCAPTCHA server.
-		
-		WARNING: Interally, urllib2.urlopen() will not do any 
-		verification of the servers certificate if SSL is used. 
-		This is a limitation of the API.
-		
-		--------------------------------------------------
-		Hint: Get |remoteip| from the HTTP request for the 
-		user when they submit the reCAPTCHA form. See your 
-		web-server API for details on how to extract this.
-		
-		In Django 1.3, it might look something like this in a 
-		view function:
-		
-		client_ip = request.META.get('REMOTE_ADDR', None)
-		if client_ip is None:
-			client_ip = '127.0.0.1'       # Unknown/Dummy IP.
-		if isinstance(client_ip, list):
-			client_ip = client_ip[0]      # For proxy clients.
-	"""
-	
-	if not (recaptcha_response_field and recaptcha_challenge_field and len(recaptcha_response_field) and len(recaptcha_challenge_field)):
-		return RecaptchaResponse(is_valid=False, error_code='incorrect-captcha-sol')
-	
-	if use_ssl:
-		server = API_SSL_SERVER
-	else:
-		server = API_SERVER
-	
-	
-	def encode_if_necessary(s):
-		if isinstance(s, unicode):
-			return s.encode('utf-8')
-		return s
-	
-	
-	post_data = {
-		'privatekey': encode_if_necessary(private_key),
-		'remoteip' :  encode_if_necessary(remoteip),
-		'challenge':  encode_if_necessary(recaptcha_challenge_field),
-		'response' :  encode_if_necessary(recaptcha_response_field),
-	}
-	
-	params = urllib.urlencode(post_data)
-	
-	request = urllib2.Request(
-				url		= "%s/verify" % server,
-				data 	= params,
-				headers = {"Content-type":"application/x-www-form-urlencoded", "User-agent":"reCAPTCHA Python"},
-			)
-	
-	
-	try:
-		http_response = urllib2.urlopen(url=request, timeout=timeout_seconds)
-	except urllib2.URLError, e:
-		error = "urllib2.URLError exception was raised: %s" % e
-		return RecaptchaResponse(is_valid=False, error_code=error)
-	
-	return_values = http_response.read().splitlines()
-	http_response.close()
-	
-	return_code = return_values[0]
-	if (return_code == "true"):
-		return RecaptchaResponse(is_valid=True)
-	else:
-		return RecaptchaResponse(is_valid=False, error_code=return_values[1])
+        _____Parameters_____
+
+        public_key - Your Public reCAPTCHA API Key.
+        use_ssl    - If True, the reCAPTCHA request is sent over SSL.
+        error      - An error message to display (from RecaptchaResponse.error_code).
+
+
+        _____Return Value_____
+
+        - reCAPTCHA HTML ready to be inserted inside a <form>.
+
+
+        _____Discussion_____
+
+        Place this HTML somewhere inside your <form> code. After
+        the user submits the form, capture 'recaptcha_challenge_field'
+        and 'recaptcha_response_field' from the HTTP POST request.
+        Then, pass them to submit() along with other required
+        arguments.
+
+        You should also capture the IP address of the client who
+        submitted the reCAPTCHA form; this must be passed to the
+        submit() method next.
+    """
+
+    error_param = ''
+    if error:
+        error_param = '&error=%s' % error
+
+    if use_ssl:
+        server = API_SSL_SERVER
+    else:
+        server = API_SERVER
+
+    html_values = {
+        'ApiServer': server,
+        'PublicKey': public_key,
+        'ErrorParam': error_param,
+    }
+
+    html = """<script type="text/javascript" src="%(ApiServer)s/challenge?k=%(PublicKey)s%(ErrorParam)s"></script>""" \
+           """<noscript>""" \
+           """  <iframe src="%(ApiServer)s/noscript?k=%(PublicKey)s%(ErrorParam)s" height="300" width="500" frameborder="0"></iframe><br />""" \
+           """  <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>""" \
+           """  <input type='hidden' name='recaptcha_response_field' value='manual_challenge' />""" \
+           """</noscript>""" % html_values
+
+    return html
+
+
+def submit(recaptcha_challenge_field, recaptcha_response_field, private_key, remoteip, use_ssl=False,
+           timeout_seconds=None):
+    """ Submits a reCAPTCHA request for verification. Returns a
+        RecaptchaResponse object containing info if the request
+        was successful or not.
+
+
+        _____Parameters_____
+
+        recaptcha_challenge_field - The value of recaptcha_challenge_field from the form.
+        recaptcha_response_field  - The value of recaptcha_response_field from the form.
+        private_key               - Your Private reCAPTCHA API Key.
+        remoteip                  - IP address of the user submitting the reCAPTCHA.
+        use_ssl					  - True/False if SSL should be used or not.
+        timeout_seconds			  - Seconds to wait for urllib2 to connect to reCAPTCHA servers.
+
+
+        _____Return Value_____
+
+        - RecaptchaResponse.is_valid == True if successful.
+        - RecaptchaResponse.is_valid == False if failure.
+            - RecaptchaResponse.error_code will also be set.
+
+
+        _____Discussion_____
+
+        Returns RecaptchaResponse.is_valid == False if either
+        'recaptcha_response_field' or 'recaptcha_challenge_field'
+        are not provided, or are empty strings.
+
+        Internally, if urllib2.URLError is raised due to a
+        problem connecting to the reCAPTCHA server,
+        RecaptchaResponse.is_valid == False will be returned and
+        RecaptchaResponse.error_code will be set to a string
+        "urllib2.URLError exception was raised: %s", where %s
+        contains info about the exception. This can occur if
+        the internet connection is down, the connection times
+        out, the reCAPTCHA server refuses the connection, etc...
+        See the urllib2 docs for info.
+
+        You should set |use_ssl| to True to protect your
+        |private_key|. Otherwise it's sent in plain-text to
+        the reCAPTCHA server.
+
+        WARNING: Interally, urllib2.urlopen() will not do any
+        verification of the servers certificate if SSL is used.
+        This is a limitation of the API.
+
+        --------------------------------------------------
+        Hint: Get |remoteip| from the HTTP request for the
+        user when they submit the reCAPTCHA form. See your
+        web-server API for details on how to extract this.
+
+        In Django 1.3, it might look something like this in a
+        view function:
+
+        client_ip = request.META.get('REMOTE_ADDR', None)
+        if client_ip is None:
+            client_ip = '127.0.0.1'       # Unknown/Dummy IP.
+        if isinstance(client_ip, list):
+            client_ip = client_ip[0]      # For proxy clients.
+    """
+
+    if not (recaptcha_response_field and recaptcha_challenge_field and len(recaptcha_response_field) and len(
+            recaptcha_challenge_field)):
+        return RecaptchaResponse(is_valid=False, error_code='incorrect-captcha-sol')
+
+    if use_ssl:
+        server = API_SSL_SERVER
+    else:
+        server = API_SERVER
+
+    def encode_if_necessary(s):
+        return s.encode('utf-8')
+
+    post_data = {
+        'privatekey': encode_if_necessary(private_key),
+        'remoteip': encode_if_necessary(remoteip),
+        'challenge': encode_if_necessary(recaptcha_challenge_field),
+        'response': encode_if_necessary(recaptcha_response_field),
+    }
+
+    params = urllib.parse.urlencode(post_data)
+    params = params.encode('utf-8')
+
+    request = urllib.request.Request(
+        url="%s/verify" % server,
+        data=params,
+        headers={"Content-type": "application/x-www-form-urlencoded", "User-agent": "reCAPTCHA Python"},
+    )
+
+    try:
+        http_response = urllib.request.urlopen(url=request, timeout=timeout_seconds)
+    except urllib.error.URLError as e:
+        error = "URLError exception was raised: %s" % e
+        return RecaptchaResponse(is_valid=False, error_code=error)
+
+    return_values = http_response.read().splitlines()
+    http_response.close()
+
+    return_code = return_values[0]
+    if (return_code == b"true"):
+        return RecaptchaResponse(is_valid=True)
+    else:
+        return RecaptchaResponse(is_valid=False, error_code=return_values[1])
