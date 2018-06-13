@@ -1,2 +1,4 @@
 ".DS_Store"
 .idea
+__pycache__
+/recaptcha_client.egg-info/
